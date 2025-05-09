@@ -1,0 +1,129 @@
+Deployment and Troubleshooting Guide for WordPress on AWS
+
+This guide provides a detailed walkthrough for deploying a WordPress project on AWS using Terraform and Ansible, along with troubleshooting steps for SSH key permissions, GitHub cloning, and application verification.
+
+Prerequisites
+
+AWS CLI configured
+
+Terraform installed
+
+Ansible installed
+
+SSH key pair
+
+GitHub repository URL of the WordPress project
+
+Step 1: EC2 Instance Setup
+
+Ensure that your Terraform configuration is correct and has the following components:
+
+Security Group with SSH and HTTP ports open
+
+EC2 Instance with a public IP
+
+RDS instance for the WordPress database
+
+Deploy using the command:
+
+terraform init
+terraform apply
+
+Verify the Terraform output to obtain the EC2 public IP and RDS endpoint.
+
+Check the running state of the EC2 instance:
+
+aws ec2 describe-instances --query "Reservations[*].Instances[*].[InstanceId,State.Name,PublicIpAddress]" --output table
+
+Step 2: SSH Key Permission Issues
+
+If you encounter the following error during SSH or Ansible execution:
+
+Permissions 0555 for '/path/to/key.pem' are too open. This private key will be ignored.
+
+Change the permissions of the key file to 400 to restrict access:
+
+chmod 400 /path/to/key.pem
+
+If the key is located in a shared or Windows filesystem, move it to the Linux home directory to avoid permission issues:
+
+sudo cp /path/to/key.pem ~/key.pem
+chmod 400 ~/key.pem
+
+Verify the permissions using:
+
+ls -l ~/key.pem
+
+Expected output:
+
+-r-------- 1 user user 1678 May 9 09:25 /home/user/key.pem
+
+Update the inventory file to reflect the new key location and run the Ansible playbook again.
+
+Step 3: Ansible Playbook Execution
+
+Navigate to the Ansible directory:
+
+cd /path/to/ansible
+
+Update the inventory.ini file with the public IP of the EC2 instance.
+
+Example inventory.ini:
+
+[wordpress]
+public-ip-address ansible_user=ubuntu ansible_ssh_private_key_file=~/key.pem
+
+Run the playbook:
+
+ansible-playbook -i inventory.ini playbook.yml
+
+If you encounter connection issues, ensure that:
+
+The security group allows SSH (port 22).
+
+The EC2 instance is running.
+
+The correct key file path is used.
+
+Step 4: GitHub Project Cloning
+
+If the GitHub project is not cloning as expected, verify the repository URL:
+
+Ensure the repository URL is correct:
+
+repo_url: "https://github.com/username/repo.git"
+
+Check the /var/www/html directory after running the playbook:
+
+ls -l /var/www/html/
+
+Step 5: Troubleshooting Common Issues
+
+SSH Key Permissions:
+
+Ensure the key has 400 permissions.
+
+Ansible Unreachable Error:
+
+Verify the IP in the inventory file.
+
+Ensure the instance is running.
+
+Git Clone Issues:
+
+Confirm repository URL is valid and accessible.
+
+Check for authentication errors and correct them.
+
+Step 6: Final Verification
+
+Verify that the WordPress files are present in /var/www/html.
+
+Access the application using the public IP:
+
+http://<EC2_Public_IP>/
+
+Check Apache service status:
+
+sudo systemctl status apache2
+
